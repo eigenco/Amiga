@@ -1,4 +1,5 @@
 #include <hidboot.h>
+#include <MouseController.h>
 
 #define DELAY 20
 #define CLK    4
@@ -45,7 +46,7 @@
 #define AMIGA_0		 0x0A
 #define AMIGA_MINUS	 0x0B
 #define AMIGA_EQUAL	 0x0C
-#define AMIGA_BACKSLASH  0x0D // \
+#define AMIGA_BACKSLASH  0x0D
 #define AMIGA_BACKSPACE  0x41
 #define AMIGA_TAB        0x42
 #define AMIGA_Q          0x10
@@ -87,7 +88,8 @@
 #define AMIGA_PERIOD     0x39
 #define AMIGA_SLASH      0x3A // /
 #define AMIGA_RSHIFT     0x61
-#define AMIGA_ALT        0x64 // LEFT AND RIGHT ARE THE SAME
+#define AMIGA_LALT       0x64
+#define AMIGA_RALT       0x65
 #define AMIGA_LAMIGA     0x66
 #define AMIGA_SPACE      0x40
 #define AMIGA_RAMIGA     0x67
@@ -105,7 +107,17 @@
 #define AMIGA_NP_7       0x3D
 #define AMIGA_NP_8       0x3E
 #define AMIGA_NP_9       0x3F
+
+#define AMIGA_NP_LPAR    0x5A
+#define AMIGA_NP_RPAR    0x5B
+#define AMIGA_NP_SLASH   0x5C
+#define AMIGA_NP_ASTERISK 0x5D
+#define AMIGA_NP_MINUS   0x4A
+#define AMIGA_NP_PLUS    0x5E
+#define AMIGA_NP_DEL     0x3C
 #define AMIGA_NP_ENTER   0x43
+
+#define AMIGA_PRINTSCR   0x6D
 
 /********/
 
@@ -165,7 +177,7 @@
 #define USB_L            15
 #define USB_SEMICOLON    51 // ;
 #define USB_QUOTE        52 // '
-#define USB_BACKSLASH    50 // \
+#define USB_BACKSLASH    50 
 #define USB_Z            29
 #define USB_X            27
 #define USB_C             6
@@ -196,14 +208,30 @@
 #define USB_RCTRL        16 // modifier key
 #define USB_RSHIFT       32 // modifier key
 
+#define USB_NP_NUMLOCK   0x53
+#define USB_NP_SLASH     0x54
+#define USB_NP_ASTERISK  0x55 // *
+#define USB_NP_MINUS     0x56
+#define USB_NP_PLUS      0x57
+#define USB_NP_ENTER     0x58
+#define USB_NP_1         0x59 // NP_END
+#define USB_NP_3         0x5b // NP_PAGEDOWN
+#define USB_NP_5         0x5d
+#define USB_NP_7         0x5f // NP_HOME
+#define USB_NP_9         0x61 // NP_PAGEUP
+#define USB_NP_0         0x62 // NP_INSERT
+#define USB_NP_DEL       0x63
 #define USB_NP_LEFT      92
 #define USB_NP_RIGHT     94
 #define USB_NP_UP        96
 #define USB_NP_DOWN      90
 
+
 #define USB_LCTRL         1 // modifier key
 #define USB_LSHIFT        2 // modifier key
 #define USB_LALT          4 // modifier key
+
+#define USB_CAPSLOCK   0x39
 
 /********/
 
@@ -279,6 +307,8 @@
 
 /********/
 
+volatile uint8_t jstate = 1;
+
 uint8_t convert(uint8_t key) {
 	uint8_t code = 0;
 
@@ -295,7 +325,9 @@ uint8_t convert(uint8_t key) {
 		case          USB_9: code = AMIGA_9; break;
 		case          USB_0: code = AMIGA_0; break;
 		case      USB_MINUS: code = AMIGA_MINUS; break;
-		case  USB_BACKSPACE: code = 0x41; break;
+		case  USB_BACKSPACE: code = AMIGA_BACKSPACE; break;
+		case      USB_SLASH: code = AMIGA_SLASH; break;
+		case  USB_BACKSLASH: code = AMIGA_BACKSLASH; break;
 		case      USB_ENTER: code = AMIGA_ENTER; break;
 		case          USB_A: code = AMIGA_A; break;
 		case          USB_S: code = AMIGA_S; break;
@@ -307,7 +339,7 @@ uint8_t convert(uint8_t key) {
 		case          USB_K: code = AMIGA_K; break;
 		case          USB_L: code = AMIGA_L; break;
 		case  USB_SEMICOLON: code = AMIGA_SEMICOLON; break;
-		case             29: code = AMIGA_Z; break;
+		case          USB_Z: code = AMIGA_Z; break;
 		case          USB_X: code = AMIGA_X; break;
 		case          USB_C: code = AMIGA_C; break;
 		case          USB_V: code = AMIGA_V; break;
@@ -338,11 +370,48 @@ uint8_t convert(uint8_t key) {
 		case          USB_O: code = AMIGA_O; break;
 		case          USB_P: code = AMIGA_P; break;
 		case       USB_RWIN: code = AMIGA_RAMIGA; break;
+/*
+		case      USB_NP_UP: code = AMIGA_NP_8; break;
+		case    USB_NP_DOWN: code = AMIGA_NP_2; break;
+		case    USB_NP_LEFT: code = AMIGA_NP_4; break;
+		case   USB_NP_RIGHT: code = AMIGA_NP_6; break;
+
 		case      USB_NP_UP: code = AMIGA_UP; break;
 		case    USB_NP_DOWN: code = AMIGA_DOWN; break;
 		case    USB_NP_LEFT: code = AMIGA_LEFT; break;
 		case   USB_NP_RIGHT: code = AMIGA_RIGHT; break;
-		case 100: code = AMIGA_LSHIFT; break;
+*/
+		case     USB_LSHIFT: code = AMIGA_LSHIFT; break;
+		case        USB_END: code = AMIGA_HELP; break;
+		case        USB_DEL: code = AMIGA_DEL; break;
+		case   USB_CAPSLOCK: code = AMIGA_CAPSLOCK; break;
+		case      USB_EQUAL: code = AMIGA_EQUAL; break;
+		case      USB_QUOTE: code = AMIGA_QUOTE; break;
+		case   USB_LBRACKET: code = AMIGA_LBRACKET; break;
+		case   USB_RBRACKET: code = AMIGA_RBRACKET; break;
+		case        USB_TAB: code = AMIGA_TAB; break;
+		case      USB_TILDE: code = AMIGA_TILDE; break;
+
+		case USB_NP_NUMLOCK: code = AMIGA_NP_LPAR; break;
+		case   USB_NP_SLASH: code = AMIGA_NP_RPAR; break;
+		case USB_NP_ASTERISK: code = AMIGA_NP_SLASH; break;
+		case   USB_NP_MINUS: code = AMIGA_NP_ASTERISK; break;
+		case     USB_PAGEUP: code = AMIGA_NP_MINUS; break;
+		case   USB_PAGEDOWN: code = AMIGA_NP_PLUS; break;
+		case       USB_NP_7: code = AMIGA_NP_7; break;
+		case       USB_NP_9: code = AMIGA_NP_9; break;
+		case       USB_NP_5: code = AMIGA_NP_5; break;
+		case       USB_NP_1: code = AMIGA_NP_1; break;
+		case       USB_NP_3: code = AMIGA_NP_3; break;
+
+		case      USB_NP_UP: if(jstate==1) code = AMIGA_UP; else code = AMIGA_NP_8; break;
+		case    USB_NP_LEFT: if(jstate==1) code = AMIGA_LEFT; else code = AMIGA_NP_4; break;
+		case   USB_NP_RIGHT: if(jstate==1) code = AMIGA_RIGHT; else code = AMIGA_NP_6; break;
+		case    USB_NP_DOWN: if(jstate==1) code = AMIGA_DOWN; else code = AMIGA_NP_2; break;
+		case   USB_NP_ENTER: code = AMIGA_NP_ENTER; break;
+		case       USB_NP_0: code = AMIGA_NP_0; break;
+		case     USB_NP_DEL: code = AMIGA_NP_DEL; break;
+
 		default: code = key; break;
 	}
 
@@ -395,13 +464,18 @@ void KbdRptParser::OnControlKeysChanged(uint8_t before, uint8_t after) {
 	a = after;
 	b = before;
 
-	Serial1.print("C ");
-	Serial1.println(a);
+//	Serial1.print("C ");
+//	Serial1.println(a);
 
 	if(((a & USB_LSHIFT) == USB_LSHIFT) && ((b & USB_LSHIFT) == 0))
 		send_amiga_kbd(AMIGA_LSHIFT);
 	if(((a & USB_LSHIFT) == 0) && ((b & USB_LSHIFT) == USB_LSHIFT))
 		send_amiga_kbd(AMIGA_LSHIFT|0x80);
+
+	if(((a & USB_RSHIFT) == USB_RSHIFT) && ((b & USB_RSHIFT) == 0))
+		send_amiga_kbd(AMIGA_RSHIFT);
+	if(((a & USB_RSHIFT) == 0) && ((b & USB_RSHIFT) == USB_RSHIFT))
+		send_amiga_kbd(AMIGA_RSHIFT|0x80);
 
 	if(((a & USB_LCTRL) == USB_LCTRL) && ((b & USB_LCTRL) == 0))
 		send_amiga_kbd(AMIGA_CTRL);
@@ -409,9 +483,14 @@ void KbdRptParser::OnControlKeysChanged(uint8_t before, uint8_t after) {
 		send_amiga_kbd(AMIGA_CTRL|0x80);
 
 	if(((a & USB_LALT) == USB_LALT) && ((b & USB_LALT) == 0))
-		send_amiga_kbd(AMIGA_ALT);
+		send_amiga_kbd(AMIGA_LALT);
 	if(((a & USB_LALT) == 0) && ((b & USB_LALT) == USB_LALT))
-		send_amiga_kbd(AMIGA_ALT|0x80);
+		send_amiga_kbd(AMIGA_LALT|0x80);
+
+	if(((a & USB_ALTGR) == USB_ALTGR) && ((b & USB_ALTGR) == 0))
+		send_amiga_kbd(AMIGA_RALT);
+	if(((a & USB_ALTGR) == 0) && ((b & USB_ALTGR) == USB_ALTGR))
+		send_amiga_kbd(AMIGA_RALT|0x80);
 
 	if(((a & USB_LWIN) == USB_LWIN) && ((b & USB_LWIN) == 0))
 		send_amiga_kbd(AMIGA_LAMIGA);
@@ -422,8 +501,8 @@ void KbdRptParser::OnControlKeysChanged(uint8_t before, uint8_t after) {
 }
 
 void KbdRptParser::OnKeyDown(uint8_t mod, uint8_t key) {
-	Serial1.print("D ");
-	Serial1.println(key);
+//	Serial1.print("D ");
+//	Serial1.println(key);
 
 	switch(key) {
 		case USB_F12: // F12 -> boot our Amiga
@@ -431,25 +510,45 @@ void KbdRptParser::OnKeyDown(uint8_t mod, uint8_t key) {
 			delay(100);
 			digitalWrite(RST, HIGH);
 			break;
-		case USB_TILDE:
+		case USB_F11:
+			if(jstate==1) jstate=0;
+			else jstate=1;
+			break;
+		case 100: // <
 			pinMode(JF, OUTPUT);
 			digitalWrite(JF, LOW);
 			break;
 		case USB_UP:
-			pinMode(JU, OUTPUT);
-			digitalWrite(JU, LOW);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_UP);
+			else {
+				pinMode(JU, OUTPUT);
+				digitalWrite(JU, LOW);
+			}
 			break;
 		case USB_DOWN:
-			pinMode(JD, OUTPUT);
-			digitalWrite(JD, LOW);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_DOWN);
+			else {
+				pinMode(JD, OUTPUT);
+				digitalWrite(JD, LOW);
+			}
 			break;
 		case USB_LEFT:
-			pinMode(JL, OUTPUT);
-			digitalWrite(JL, LOW);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_LEFT);
+			else {
+				pinMode(JL, OUTPUT);
+				digitalWrite(JL, LOW);
+			}
 			break;
 		case USB_RIGHT:
-			pinMode(JR, OUTPUT);
-			digitalWrite(JR, LOW);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_RIGHT);
+			else {
+				pinMode(JR, OUTPUT);
+				digitalWrite(JR, LOW);
+			}
 			break;
 		default:
 			key = convert(key);
@@ -463,25 +562,41 @@ void KbdRptParser::OnKeyUp(uint8_t mod, uint8_t key) {
 //	Serial1.println(key);
 
 	switch(key) {
-		case USB_TILDE:
+		case 100: // <
 			digitalWrite(JF, HIGH);
 			pinMode(JF, INPUT);
 			break;
 		case USB_UP:
-			digitalWrite(JU, HIGH);
-			pinMode(JU, INPUT);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_UP|0x80);
+			else {
+				digitalWrite(JU, HIGH);
+				pinMode(JU, INPUT);
+			}
 			break;
 		case USB_DOWN:
-			digitalWrite(JD, HIGH);
-			pinMode(JD, INPUT);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_DOWN|0x80);
+			else {
+				digitalWrite(JD, HIGH);
+				pinMode(JD, INPUT);
+			}
 			break;
 		case USB_LEFT:
-			digitalWrite(JL, HIGH);
-			pinMode(JL, INPUT);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_LEFT|0x80);
+			else {
+				digitalWrite(JL, HIGH);
+				pinMode(JL, INPUT);
+			}
 			break;
 		case USB_RIGHT:
-			digitalWrite(JR, HIGH);
-			pinMode(JR, INPUT);
+			if(jstate==0)
+				send_amiga_kbd(AMIGA_RIGHT|0x80);
+			else {
+				digitalWrite(JR, HIGH);
+				pinMode(JR, INPUT);
+			}
 			break;
 		default:
 			key = convert(key);
@@ -541,25 +656,25 @@ void MouseRptParser::OnMouseMove(MOUSEINFO *mi) {
 }
 
 void MouseRptParser::OnLeftButtonUp(MOUSEINFO *mi) {
-	Serial1.println("Lup");
+//	Serial1.println("Lup");
 	digitalWrite(M1, HIGH);
 	pinMode(M1, INPUT);
 }
 
 void MouseRptParser::OnLeftButtonDown(MOUSEINFO *mi) {
-	Serial1.println("Ldown");
+//	Serial1.println("Ldown");
 	pinMode(M1, OUTPUT);
 	digitalWrite(M1, LOW);
 }
 
 void MouseRptParser::OnRightButtonUp(MOUSEINFO *mi) {
-	Serial1.println("Rup");
+//	Serial1.println("Rup");
 	digitalWrite(M2, HIGH);
 	pinMode(M2, INPUT);
 }
 
 void MouseRptParser::OnRightButtonDown(MOUSEINFO *mi) {
-	Serial1.println("Rdown");
+//	Serial1.println("Rdown");
 	pinMode(M2, OUTPUT);
 	digitalWrite(M2, LOW);
 }
